@@ -1,0 +1,9 @@
+---
+# Sudo includedir syntax varies by distro
+# older versions use "#includedir" newer ones use "@includedir"
+_sudo_includedir:
+  default: "@includedir /etc/sudoers.d"
+  Debian: "#includedir /etc/sudoers.d"
+  RedHat: "#includedir /etc/sudoers.d"
+sudo_includedir: >-
+  {{ _sudo_includedir[ansible_facts.os_family] | default(_sudo_includedir['default']) }}

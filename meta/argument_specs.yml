@@ -1,0 +1,7 @@
+---
+argument_specs:
+  main:
+    author: Niclas Spreng
+    description: Install and configure sudo on linux systems.
+    short_description: sudo
+    options: {}

@@ -1,0 +1,40 @@
+---
+- name: Ensure sudo package is installed
+  ansible.builtin.package:
+    name: sudo
+    state: present
+
+# Force sudo to use a pseudo-terminal (pty) to prevent background processes
+# from escaping the sudo session, mitigating certain privilege escalation risks
+- name: Configure sudo to use a pseudo-terminal
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    line: "Defaults\tuse_pty"
+    # yamllint disable-line rule:quoted-strings
+    regexp: "^Defaults\\s+use_pty$"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+
+- name: Disable requiretty for sudo
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    line: "# Defaults\trequiretty"
+    # yamllint disable-line rule:quoted-strings
+    regexp: "^Defaults\\s+requiretty$"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+
+- name: Ensure sudoers includes the sudoers.d directory
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    line: "{{ sudo_includedir }}"
+    # yamllint disable-line rule:quoted-strings
+    regexp: "^(@|#)includedir"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
