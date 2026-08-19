@@ -4,6 +4,20 @@
     name: sudo
     state: present
 
+# visudo commonly lives in /usr/sbin, which non-interactive/non-login shells
+# (used by Ansible to execute commands) may not have on their PATH. Resolve
+# the full path on the target host so `validate` below doesn't silently rely
+# on PATH, and fall back to omitting validation entirely if visudo is missing.
+- name: Discover the full path to visudo on the target host
+  ansible.builtin.shell: command -v visudo || true
+  register: sudo_visudo_path
+  changed_when: false
+
+- name: Parse the visudo validation path (if exists)
+  ansible.builtin.set_fact:
+    sudo_validation_command: >-
+      {{ (sudo_visudo_path.stdout | trim ~ ' -cf %s') if (sudo_visudo_path.stdout | trim | length > 0) else '' }}
+
 # Force sudo to use a pseudo-terminal (pty) to prevent background processes
 # from escaping the sudo session, mitigating certain privilege escalation risks
 - name: Configure sudo to use a pseudo-terminal
@@ -15,7 +29,7 @@
     owner: root
     group: root
     mode: "0440"
-    validate: visudo -cf %s
+    validate: "{{ sudo_validation_command | default(omit, true) }}"
 
 - name: Disable requiretty for sudo
   ansible.builtin.lineinfile:
@@ -26,7 +40,7 @@
     owner: root
     group: root
     mode: "0440"
-    validate: visudo -cf %s
+    validate: "{{ sudo_validation_command | default(omit, true) }}"
 
 - name: Ensure sudoers includes the sudoers.d directory
   ansible.builtin.lineinfile:
@@ -37,4 +51,4 @@
     owner: root
     group: root
     mode: "0440"
-    validate: visudo -cf %s
+    validate: "{{ sudo_validation_command | default(omit, true) }}"
